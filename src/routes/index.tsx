@@ -1,7 +1,6 @@
+import { useCallback, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
-  Bot,
-  Sparkles,
   Globe2,
   Mic,
   FileText,
@@ -10,10 +9,14 @@ import {
   LayoutGrid,
   MessageCircle,
   ArrowRight,
+  Upload,
+  Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { openAgent } from "@/components/agent/AgentLauncher";
+import { ingestFile, MAX_UPLOAD_BYTES } from "@/lib/doc-store";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -25,14 +28,9 @@ function Landing() {
       {/* Nav */}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <a href="#top" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-md">
-              <Bot className="h-5 w-5" />
-            </div>
-            <span className="text-sm font-semibold tracking-tight sm:text-base">
-              Dynamic Customer Agent
-            </span>
-          </a>
+          <span className="text-sm font-semibold tracking-tight sm:text-base">
+            Dynamic Customer Agent
+          </span>
           <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground">Features</a>
             <a href="#surfaces" className="hover:text-foreground">Interfaces</a>
@@ -41,7 +39,13 @@ function Landing() {
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button variant="outline" size="sm" asChild>
-              <a href="#features">Learn more</a>
+              <a
+                href="https://github.com/uyvkjcgdr65"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Contact Developer
+              </a>
             </Button>
           </div>
         </div>
@@ -59,10 +63,6 @@ function Landing() {
           />
         </div>
         <div className="mx-auto max-w-6xl px-6 pt-20 pb-24 text-center">
-          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/30 px-3 py-1 text-xs text-muted-foreground">
-            <Sparkles className="h-3 w-3 text-primary" />
-            Multilingual · RAG-powered · Real-time streaming
-          </div>
           <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl md:text-6xl">
             The customer agent that speaks{" "}
             <span
@@ -77,12 +77,12 @@ function Landing() {
             .
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base text-muted-foreground sm:text-lg">
-            Drop in a PDF or Word doc. Ask by voice or text in any language. Get
-            instant, streaming answers — inside a retractable sidebar or a
-            draggable card, wherever you need it.
+            Drop in a PDF, Word, or TXT doc. Ask by voice or text in any
+            language. Get instant, streaming answers — inside a retractable
+            sidebar or a draggable card, wherever you need it.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button size="lg" onClick={() => openAgent()} className="gap-2">
+            <Button size="lg" onClick={() => scrollTo("surfaces")} className="gap-2">
               <MessageCircle className="h-4 w-4" />
               Try the agent
             </Button>
@@ -95,10 +95,25 @@ function Landing() {
           <div className="mt-14 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
             <Kbd>PDF</Kbd>
             <Kbd>DOCX</Kbd>
+            <Kbd>TXT</Kbd>
             <Kbd>Voice input</Kbd>
             <Kbd>Auto language</Kbd>
             <Kbd>Word-by-word streaming</Kbd>
             <Kbd>Dark / Light</Kbd>
+          </div>
+        </div>
+      </section>
+
+      {/* Upload docs */}
+      <section id="upload" className="border-t border-border/60 py-20">
+        <div className="mx-auto max-w-4xl px-6">
+          <SectionHeader
+            eyebrow="Upload docs"
+            title="Feed the agent your documents"
+            subtitle="PDF, Word, or TXT — up to 15 MB per file. Parsed in your browser and instantly available to the agent."
+          />
+          <div className="mt-10">
+            <DocUploader />
           </div>
         </div>
       </section>
@@ -125,7 +140,7 @@ function Landing() {
             <Feature
               icon={<FileText />}
               title="Document RAG"
-              body="Upload PDF, Word, or text files. The agent grounds answers in your documents, in-session."
+              body="Upload PDF, Word, or TXT files. The agent grounds answers in your documents, in-session."
             />
             <Feature
               icon={<Zap />}
@@ -176,15 +191,12 @@ function Landing() {
       {/* How it works */}
       <section id="how" className="border-t border-border/60 py-24">
         <div className="mx-auto max-w-4xl px-6">
-          <SectionHeader
-            eyebrow="How it works"
-            title="Three steps to answers"
-          />
+          <SectionHeader eyebrow="How it works" title="Three steps to answers" />
           <ol className="mt-14 space-y-6">
             {[
               {
                 t: "Upload your docs",
-                d: "Drop in a PDF or Word file. It's parsed and chunked in your browser — nothing leaves your session.",
+                d: "Drop in a PDF, Word, or TXT file. It's parsed and chunked in your browser — nothing leaves your session.",
               },
               {
                 t: "Ask in any language",
@@ -210,7 +222,7 @@ function Landing() {
             ))}
           </ol>
           <div className="mt-10 flex justify-center">
-            <Button size="lg" onClick={() => openAgent()} className="gap-2">
+            <Button size="lg" onClick={() => scrollTo("surfaces")} className="gap-2">
               <MessageCircle className="h-4 w-4" />
               Start chatting
             </Button>
@@ -219,14 +231,116 @@ function Landing() {
       </section>
 
       <footer className="border-t border-border/60 py-8">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 text-xs text-muted-foreground sm:flex-row">
-          <div className="flex items-center gap-2">
-            <Bot className="h-3.5 w-3.5" />
-            Dynamic Customer Agent
-          </div>
-          <div>Powered by Groq · Built with Lovable</div>
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-6 text-xs text-muted-foreground">
+          Dynamic Customer Agent
         </div>
       </footer>
+    </div>
+  );
+}
+
+function scrollTo(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function DocUploader() {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [uploaded, setUploaded] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleFiles = useCallback(async (files: FileList | File[] | null) => {
+    if (!files) return;
+    const arr = Array.from(files);
+    if (arr.length === 0) return;
+    setBusy(true);
+    setError(null);
+    try {
+      for (const f of arr) {
+        try {
+          if (f.size > MAX_UPLOAD_BYTES) {
+            setError(`${f.name} exceeds 15 MB limit.`);
+            continue;
+          }
+          const doc = await ingestFile(f);
+          setUploaded((prev) => [...prev, doc.name]);
+        } catch (e) {
+          setError(`Failed to read ${f.name}: ${e instanceof Error ? e.message : "unknown"}`);
+        }
+      }
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }, []);
+
+  return (
+    <div>
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          handleFiles(e.dataTransfer.files);
+        }}
+        className={
+          "flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-10 text-center transition-colors " +
+          (dragOver ? "border-primary bg-primary/5" : "border-border/60 bg-card")
+        }
+      >
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 text-primary">
+          <Upload className="h-5 w-5" />
+        </div>
+        <div className="font-semibold">Drop files here or click to upload</div>
+        <div className="text-xs text-muted-foreground">
+          PDF · DOCX · TXT · MD — max 15 MB each
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".pdf,.docx,.txt,.md"
+          multiple
+          className="hidden"
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+        <Button
+          className="mt-2 gap-2"
+          onClick={() => inputRef.current?.click()}
+          disabled={busy}
+        >
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          {busy ? "Parsing…" : "Choose files"}
+        </Button>
+      </div>
+      {error && (
+        <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error}
+        </div>
+      )}
+      {uploaded.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {uploaded.map((n, i) => (
+            <div
+              key={n + i}
+              className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm"
+            >
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+              <span className="truncate">{n}</span>
+              <span className="ml-auto text-xs text-muted-foreground">Ready</span>
+            </div>
+          ))}
+          <div className="pt-2">
+            <Button variant="outline" size="sm" onClick={() => openAgent()} className="gap-2">
+              <MessageCircle className="h-4 w-4" /> Ask the agent about these
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
