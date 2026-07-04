@@ -5,10 +5,11 @@ export async function extractText(file: File): Promise<string> {
     return await file.text();
   }
   if (name.endsWith(".docx")) {
-    const mammoth = await import("mammoth/mammoth.browser");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mammoth: any = await import("mammoth/mammoth.browser" as string);
     const buf = await file.arrayBuffer();
     const res = await mammoth.extractRawText({ arrayBuffer: buf });
-    return res.value ?? "";
+    return (res?.value as string) ?? "";
   }
   if (name.endsWith(".pdf")) {
     const pdfjs = await import("pdfjs-dist");
