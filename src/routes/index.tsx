@@ -104,20 +104,6 @@ function Landing() {
         </div>
       </section>
 
-      {/* Upload docs */}
-      <section id="upload" className="border-t border-border/60 py-20">
-        <div className="mx-auto max-w-4xl px-6">
-          <SectionHeader
-            eyebrow="Upload docs"
-            title="Feed the agent your documents"
-            subtitle="PDF, Word, or TXT — up to 15 MB per file. Parsed in your browser and instantly available to the agent."
-          />
-          <div className="mt-10">
-            <DocUploader />
-          </div>
-        </div>
-      </section>
-
       {/* Features */}
       <section id="features" className="border-t border-border/60 py-24">
         <div className="mx-auto max-w-6xl px-6">
@@ -157,6 +143,20 @@ function Landing() {
               title="Draggable card"
               body="Prefer a floating card? Grab the handle and drop it anywhere on your screen."
             />
+          </div>
+        </div>
+      </section>
+
+      {/* Upload docs */}
+      <section id="upload" className="border-t border-border/60 py-20">
+        <div className="mx-auto max-w-4xl px-6">
+          <SectionHeader
+            eyebrow="Upload docs"
+            title="Feed the agent your documents"
+            subtitle="PDF, Word, or TXT — up to 15 MB per file. Parsed in your browser and instantly available to the agent."
+          />
+          <div className="mt-10">
+            <DocUploader />
           </div>
         </div>
       </section>
