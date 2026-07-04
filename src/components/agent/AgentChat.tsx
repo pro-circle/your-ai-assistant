@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import ReactMarkdown from "react-markdown";
-import { Send, Paperclip, X, Loader2, FileText, Bot, User, StopCircle } from "lucide-react";
+import { Send, Paperclip, X, Loader2, FileText, User, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -11,28 +11,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { extractText } from "@/lib/document-parser";
-import { chunkText, retrieve, type Chunk } from "@/lib/rag";
+import { retrieve } from "@/lib/rag";
 import { streamChat, type ChatMessage } from "@/lib/stream-chat";
+import {
+  getDocs,
+  subscribeDocs,
+  ingestFile,
+  removeDocAt,
+} from "@/lib/doc-store";
 import { VoiceInput } from "./VoiceInput";
 import { VOICE_LANGUAGES, defaultVoiceLanguage } from "@/lib/voice-languages";
+import agentAvatar from "@/assets/agent-avatar.png.asset.json";
 
 type UIMessage = ChatMessage & { id: string };
-type DocFile = { name: string; chunks: Chunk[] };
 
 export function AgentChat({ onClose }: { onClose?: () => void }) {
+  const docs = useSyncExternalStore(subscribeDocs, getDocs, getDocs);
   const [messages, setMessages] = useState<UIMessage[]>([
     {
       id: "welcome",
       role: "assistant",
       content:
-        "👋 Hi! I'm the Dynamic Customer Agent. Ask me anything — I reply in your language. Upload a PDF or Word doc and I'll answer from it.",
+        "👋 Hi! I'm the Dynamic Customer Agent. Ask me anything — I reply in your language. Upload a PDF, Word, or TXT doc and I'll answer from it.",
     },
   ]);
   const [input, setInput] = useState("");
   const [interim, setInterim] = useState("");
   const [voiceLang, setVoiceLang] = useState<string>(defaultVoiceLanguage());
-  const [docs, setDocs] = useState<DocFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,17 +70,13 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     setUploading(true);
     setError(null);
     try {
-      const newDocs: DocFile[] = [];
       for (const f of Array.from(files)) {
         try {
-          const text = await extractText(f);
-          const chunks = chunkText(f.name, text);
-          if (chunks.length > 0) newDocs.push({ name: f.name, chunks });
+          await ingestFile(f);
         } catch (e) {
           setError(`Failed to read ${f.name}: ${e instanceof Error ? e.message : "unknown"}`);
         }
       }
-      if (newDocs.length) setDocs((prev) => [...prev, ...newDocs]);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -94,7 +95,7 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     setInput("");
     setSending(true);
 
-    const contextChunks = retrieve(text, allChunks, 4).map(
+    const contextChunks = retrieve(text, allChunks, 6).map(
       (c) => `Source: ${c.source}\n${c.text}`,
     );
 
@@ -136,26 +137,23 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
 
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
-      {/* Header */}
+      {/* Header — close on the left */}
       <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent text-primary-foreground">
-            <Bot className="h-4 w-4" />
-          </div>
+          {onClose && (
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
+              <X className="h-4 w-4" />
+            </Button>
+          )}
           <div>
             <div className="text-sm font-semibold">Dynamic Customer Agent</div>
             <div className="text-xs text-muted-foreground">
               {docs.length > 0
                 ? `${docs.length} doc${docs.length > 1 ? "s" : ""} loaded`
-                : "Multilingual · Voice · RAG"}
+                : "Ask anything in any language"}
             </div>
           </div>
         </div>
-        {onClose && (
-          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
-            <X className="h-4 w-4" />
-          </Button>
-        )}
       </div>
 
       {/* Doc chips */}
@@ -170,7 +168,7 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
               <span className="max-w-[140px] truncate">{d.name}</span>
               <button
                 className="text-muted-foreground hover:text-foreground"
-                onClick={() => setDocs((prev) => prev.filter((_, j) => j !== i))}
+                onClick={() => removeDocAt(i)}
                 aria-label={`Remove ${d.name}`}
               >
                 <X className="h-3 w-3" />
@@ -188,9 +186,11 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
             className={cn("flex gap-2", m.role === "user" ? "justify-end" : "justify-start")}
           >
             {m.role === "assistant" && (
-              <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-primary-foreground">
-                <Bot className="h-3.5 w-3.5" />
-              </div>
+              <img
+                src={agentAvatar.url}
+                alt="Agent"
+                className="mt-1 h-7 w-7 shrink-0 rounded-full object-cover"
+              />
             )}
             <div
               className={cn(
