@@ -1,15 +1,25 @@
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
+export type ChatAttachment =
+  | { kind: "image"; name: string; mimeType: string; dataUrl: string }
+  | { kind: "text"; name: string; mimeType: string; text: string };
+
 export async function streamChat(
   messages: ChatMessage[],
   contextChunks: string[],
   onDelta: (delta: string) => void,
   signal?: AbortSignal,
+  options?: { attachment?: ChatAttachment | null; outputLanguage?: string | null },
 ): Promise<void> {
   const res = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, contextChunks }),
+    body: JSON.stringify({
+      messages,
+      contextChunks,
+      attachment: options?.attachment ?? null,
+      outputLanguage: options?.outputLanguage ?? null,
+    }),
     signal,
   });
 
