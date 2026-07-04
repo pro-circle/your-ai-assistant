@@ -11,6 +11,8 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { ThemeProvider } from "@/components/theme-provider";
+import { AgentLauncher } from "@/components/agent/AgentLauncher";
 
 function NotFoundComponent() {
   return (
@@ -77,14 +79,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Dynamic Customer Agent — Multilingual AI Support" },
+      {
+        name: "description",
+        content:
+          "A powerful multilingual customer support agent. Voice input, document RAG, streaming answers, and a draggable card or sidebar interface.",
+      },
+      { property: "og:title", content: "Dynamic Customer Agent" },
+      {
+        property: "og:description",
+        content:
+          "Multilingual AI customer agent with voice, document RAG, and a draggable card / sidebar UI.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -119,8 +127,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <ThemeProvider>
+        <Outlet />
+        <AgentLauncher />
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
