@@ -335,7 +335,7 @@ function DocUploader() {
             </div>
           ))}
           <div className="pt-2">
-            <Button variant="outline" size="sm" onClick={() => openAgent()} className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => scrollTo("surfaces")} className="gap-2">
               <MessageCircle className="h-4 w-4" /> Ask the agent about these
             </Button>
           </div>
