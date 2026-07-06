@@ -42,17 +42,17 @@ const CHAT_FILE_ACCEPT =
 
 export function AgentChat({ onClose }: { onClose?: () => void }) {
   const docs = useSyncExternalStore(subscribeDocs, getDocs, getDocs);
+  const initialLang = defaultVoiceLanguage();
   const [messages, setMessages] = useState<UIMessage[]>([
     {
       id: "welcome",
       role: "assistant",
-      content:
-        "👋 Hi! I'm the Dynamic Customer Agent. Ask me anything — I reply in your language. Upload a doc, screenshot, or code file and I'll help.",
+      content: welcomeMessageFor(initialLang),
     },
   ]);
   const [input, setInput] = useState("");
   const [interim, setInterim] = useState("");
-  const [agentLang, setAgentLang] = useState<string>(defaultVoiceLanguage());
+  const [agentLang, setAgentLang] = useState<string>(initialLang);
   const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
   const [uploading, setUploading] = useState(false);
   const [attaching, setAttaching] = useState(false);
