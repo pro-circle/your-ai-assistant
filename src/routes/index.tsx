@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Globe2,
   Mic,
@@ -82,14 +82,14 @@ function Landing() {
             sidebar or a draggable card, wherever you need it.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Button size="lg" onClick={() => scrollTo("surfaces")} className="gap-2">
+            <Button size="lg" onClick={() => scrollTo("upload")} className="gap-2">
               <MessageCircle className="h-4 w-4" />
               Try the agent
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <a href="#features" className="gap-2">
-                Learn more <ArrowRight className="h-4 w-4" />
-              </a>
+              <Link to="/about" className="gap-2 inline-flex items-center">
+                Learn more <ArrowRight className="ml-1 h-4 w-4" />
+              </Link>
             </Button>
           </div>
           <div className="mt-14 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">

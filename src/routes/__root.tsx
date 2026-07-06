@@ -13,6 +13,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AgentLauncher } from "@/components/agent/AgentLauncher";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -130,6 +131,12 @@ function RootComponent() {
       <ThemeProvider>
         <Outlet />
         <AgentLauncher />
+        <Toaster
+          richColors
+          closeButton
+          position="top-right"
+          toastOptions={{ duration: 4000 }}
+        />
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -34,6 +34,7 @@ import { VoiceInput } from "./VoiceInput";
 import { VOICE_LANGUAGES, defaultVoiceLanguage } from "@/lib/voice-languages";
 import { welcomeMessageFor } from "@/lib/welcome-messages";
 import agentAvatar from "@/assets/agent-avatar.png.asset.json";
+import { toast } from "sonner";
 
 type UIMessage = ChatMessage & { id: string };
 
@@ -103,8 +104,11 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
       for (const f of Array.from(files)) {
         try {
           await ingestFile(f);
+          toast.success(`${f.name} added to knowledge`);
         } catch (e) {
-          setError(`Failed to read ${f.name}: ${e instanceof Error ? e.message : "unknown"}`);
+          const msg = `Failed to read ${f.name}: ${e instanceof Error ? e.message : "unknown"}`;
+          setError(msg);
+          toast.error(msg);
         }
       }
     } finally {
@@ -121,8 +125,11 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     try {
       const att = await readChatAttachment(file);
       setAttachment(att);
+      toast.success(`Attached ${att.name}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to read file");
+      const msg = e instanceof Error ? e.message : "Failed to read file";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setAttaching(false);
       if (chatFileInputRef.current) chatFileInputRef.current.value = "";
@@ -176,9 +183,17 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     } catch (e) {
       if ((e as Error).name === "AbortError") {
         // stopped by user
+        toast.info("Response stopped.");
       } else {
-        const msg = e instanceof Error ? e.message : "Something went wrong.";
+        const raw = e instanceof Error ? e.message : "Something went wrong.";
+        const offline = typeof navigator !== "undefined" && !navigator.onLine;
+        const msg = offline
+          ? "Agent unavailable — connect to network and try again."
+          : /fetch|network|failed|load/i.test(raw)
+            ? `Agent unavailable — ${raw}`
+            : raw;
         setError(msg);
+        toast.error(msg);
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       }
     } finally {
