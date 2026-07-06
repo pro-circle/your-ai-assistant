@@ -32,6 +32,7 @@ import {
 } from "@/lib/doc-store";
 import { VoiceInput } from "./VoiceInput";
 import { VOICE_LANGUAGES, defaultVoiceLanguage } from "@/lib/voice-languages";
+import { welcomeMessageFor } from "@/lib/welcome-messages";
 import agentAvatar from "@/assets/agent-avatar.png.asset.json";
 
 type UIMessage = ChatMessage & { id: string };
