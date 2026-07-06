@@ -78,6 +78,14 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     inputRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === "welcome" ? { ...m, content: welcomeMessageFor(agentLang) } : m,
+      ),
+    );
+  }, [agentLang]);
+
   const handleTranscript = useCallback((text: string, isFinal: boolean) => {
     if (isFinal) {
       setInput((p) => (p + " " + text).trim());
