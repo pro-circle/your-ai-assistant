@@ -32,6 +32,7 @@ import {
 } from "@/lib/doc-store";
 import { VoiceInput } from "./VoiceInput";
 import { VOICE_LANGUAGES, defaultVoiceLanguage } from "@/lib/voice-languages";
+import { welcomeMessageFor } from "@/lib/welcome-messages";
 import agentAvatar from "@/assets/agent-avatar.png.asset.json";
 
 type UIMessage = ChatMessage & { id: string };
@@ -41,17 +42,17 @@ const CHAT_FILE_ACCEPT =
 
 export function AgentChat({ onClose }: { onClose?: () => void }) {
   const docs = useSyncExternalStore(subscribeDocs, getDocs, getDocs);
+  const initialLang = defaultVoiceLanguage();
   const [messages, setMessages] = useState<UIMessage[]>([
     {
       id: "welcome",
       role: "assistant",
-      content:
-        "👋 Hi! I'm the Dynamic Customer Agent. Ask me anything — I reply in your language. Upload a doc, screenshot, or code file and I'll help.",
+      content: welcomeMessageFor(initialLang),
     },
   ]);
   const [input, setInput] = useState("");
   const [interim, setInterim] = useState("");
-  const [agentLang, setAgentLang] = useState<string>(defaultVoiceLanguage());
+  const [agentLang, setAgentLang] = useState<string>(initialLang);
   const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
   const [uploading, setUploading] = useState(false);
   const [attaching, setAttaching] = useState(false);
@@ -76,6 +77,14 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === "welcome" ? { ...m, content: welcomeMessageFor(agentLang) } : m,
+      ),
+    );
+  }, [agentLang]);
 
   const handleTranscript = useCallback((text: string, isFinal: boolean) => {
     if (isFinal) {
