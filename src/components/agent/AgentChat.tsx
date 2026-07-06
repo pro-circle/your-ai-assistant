@@ -104,8 +104,11 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
       for (const f of Array.from(files)) {
         try {
           await ingestFile(f);
+          toast.success(`${f.name} added to knowledge`);
         } catch (e) {
-          setError(`Failed to read ${f.name}: ${e instanceof Error ? e.message : "unknown"}`);
+          const msg = `Failed to read ${f.name}: ${e instanceof Error ? e.message : "unknown"}`;
+          setError(msg);
+          toast.error(msg);
         }
       }
     } finally {
@@ -122,8 +125,11 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     try {
       const att = await readChatAttachment(file);
       setAttachment(att);
+      toast.success(`Attached ${att.name}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to read file");
+      const msg = e instanceof Error ? e.message : "Failed to read file";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setAttaching(false);
       if (chatFileInputRef.current) chatFileInputRef.current.value = "";
