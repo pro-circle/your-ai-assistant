@@ -34,6 +34,7 @@ import { VoiceInput } from "./VoiceInput";
 import { VOICE_LANGUAGES, defaultVoiceLanguage } from "@/lib/voice-languages";
 import { welcomeMessageFor } from "@/lib/welcome-messages";
 import agentAvatar from "@/assets/agent-avatar.png.asset.json";
+import { toast } from "sonner";
 
 type UIMessage = ChatMessage & { id: string };
 
@@ -176,9 +177,17 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     } catch (e) {
       if ((e as Error).name === "AbortError") {
         // stopped by user
+        toast.info("Response stopped.");
       } else {
-        const msg = e instanceof Error ? e.message : "Something went wrong.";
+        const raw = e instanceof Error ? e.message : "Something went wrong.";
+        const offline = typeof navigator !== "undefined" && !navigator.onLine;
+        const msg = offline
+          ? "Agent unavailable — connect to network and try again."
+          : /fetch|network|failed|load/i.test(raw)
+            ? `Agent unavailable — ${raw}`
+            : raw;
         setError(msg);
+        toast.error(msg);
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       }
     } finally {
