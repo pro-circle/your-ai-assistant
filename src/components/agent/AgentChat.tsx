@@ -63,6 +63,8 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
   const { messages, input, attachment, agentLang } = chat;
 
   // Local ephemeral state (per mount)
+  const [, setTick] = useState(0);
+  const rerender = useCallback(() => setTick((t) => t + 1), []);
   const localRef = useRef<LocalState>({
     interim: "",
     sending: false,
@@ -70,22 +72,8 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     uploading: false,
     error: null,
   });
-  // Force re-render helper for local state
-  const [, forceRender] = useSyncExternalStore(
-    (cb) => {
-      const id = setInterval(() => {}, 60_000);
-      forceRerenderListeners.add(cb);
-      return () => {
-        clearInterval(id);
-        forceRerenderListeners.delete(cb);
-      };
-    },
-    () => forceRerenderVersion,
-    () => forceRerenderVersion,
-  ) as unknown as [number, () => void];
-  void forceRender;
   const local = localRef.current;
-  const rerender = () => bumpForceRerender();
+
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
