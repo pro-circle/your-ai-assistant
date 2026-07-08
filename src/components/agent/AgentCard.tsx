@@ -45,18 +45,21 @@ export function AgentCard({ open, onClose }: { open: boolean; onClose: () => voi
 
   return (
     <div
-      className="fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-background shadow-2xl"
+      className="fixed z-50 flex flex-col overflow-hidden rounded-2xl border border-white/70 bg-background shadow-2xl ring-1 ring-white/40"
       style={{ left: pos.x, top: pos.y, width: CARD_W, height: CARD_H }}
     >
       <div
-        className="flex cursor-grab items-center justify-center border-b border-border/40 bg-muted/40 py-1 active:cursor-grabbing"
+        className="flex cursor-grab items-center justify-center gap-1.5 border-b border-border/40 bg-muted/40 py-1 text-[11px] font-medium text-muted-foreground active:cursor-grabbing"
         onPointerDown={(e) => {
           (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
           dragRef.current = { dx: e.clientX - pos.x, dy: e.clientY - pos.y };
         }}
+        title="Drag to move"
       >
-        <GripHorizontal className="h-4 w-4 text-muted-foreground" />
+        <GripHorizontal className="h-3.5 w-3.5" />
+        <span>Drag Here</span>
       </div>
+
       <div className="flex-1 overflow-hidden">
         <AgentChat onClose={onClose} />
       </div>
