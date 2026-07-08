@@ -160,3 +160,13 @@
     color: var(--color-foreground);
   }
 }
+
+/* Dark-mode: purple hover accent on links and buttons (light mode unchanged). */
+@layer utilities {
+  .dark a:hover,
+  .dark button:hover:not(:disabled) {
+    color: var(--brand-glow);
+    transition: color 150ms ease;
+  }
+}
+
