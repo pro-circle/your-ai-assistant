@@ -10,6 +10,15 @@ const CODE_EXT = new Set([
 
 const MAX_ATTACH_BYTES = 15 * 1024 * 1024;
 
+export async function readChatAttachmentFromBlob(blob: Blob, fallbackName?: string): Promise<ChatAttachment> {
+  const name =
+    (blob as File).name ||
+    fallbackName ||
+    `pasted-${Date.now()}.${(blob.type.split("/")[1] || "bin").split("+")[0]}`;
+  const file = blob instanceof File ? blob : new File([blob], name, { type: blob.type });
+  return readChatAttachment(file);
+}
+
 export async function readChatAttachment(file: File): Promise<ChatAttachment> {
   if (file.size > MAX_ATTACH_BYTES) {
     throw new Error(`${file.name} exceeds 15MB limit`);

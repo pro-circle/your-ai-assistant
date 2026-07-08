@@ -10,6 +10,7 @@ import {
   StopCircle,
   Image as ImageIcon,
   Languages,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,8 +23,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { retrieve } from "@/lib/rag";
-import { streamChat, type ChatMessage, type ChatAttachment } from "@/lib/stream-chat";
-import { readChatAttachment } from "@/lib/chat-attachment";
+import { streamChat, type ChatMessage } from "@/lib/stream-chat";
+import { readChatAttachment, readChatAttachmentFromBlob } from "@/lib/chat-attachment";
 import {
   getDocs,
   subscribeDocs,
@@ -31,36 +32,52 @@ import {
   removeDocAt,
 } from "@/lib/doc-store";
 import { VoiceInput } from "./VoiceInput";
-import { VOICE_LANGUAGES, defaultVoiceLanguage } from "@/lib/voice-languages";
-import { welcomeMessageFor } from "@/lib/welcome-messages";
-import agentAvatar from "@/assets/agent-avatar.png.asset.json";
+import { VOICE_LANGUAGES } from "@/lib/voice-languages";
+import {
+  clearChat,
+  getChatState,
+  setAgentLang,
+  setChatState,
+  setMessages,
+  subscribeChat,
+  type UIMessage,
+} from "@/lib/chat-store";
+import agentAvatar from "@/assets/agent-avatar.png";
 import { toast } from "sonner";
-
-type UIMessage = ChatMessage & { id: string };
 
 const CHAT_FILE_ACCEPT =
   "image/*,.pdf,.docx,.txt,.md,.js,.jsx,.ts,.tsx,.py,.java,.c,.cc,.cpp,.cs,.go,.rs,.rb,.php,.html,.css,.json,.yml,.yaml,.xml,.sh,.sql,.swift,.kt,.dart,.lua,.r,.toml,.ini,.log,.vue,.svelte";
 
+// Sending is per-mount (a stream can only run where it was started).
+type LocalState = {
+  interim: string;
+  sending: boolean;
+  attaching: boolean;
+  uploading: boolean;
+  error: string | null;
+};
+
 export function AgentChat({ onClose }: { onClose?: () => void }) {
   const docs = useSyncExternalStore(subscribeDocs, getDocs, getDocs);
-  const initialLang = defaultVoiceLanguage();
-  const [messages, setMessages] = useState<UIMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content: welcomeMessageFor(initialLang),
-    },
-  ]);
-  const [input, setInput] = useState("");
-  const [interim, setInterim] = useState("");
-  const [agentLang, setAgentLang] = useState<string>(initialLang);
-  const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [attaching, setAttaching] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const chat = useSyncExternalStore(subscribeChat, getChatState, getChatState);
+  const { messages, input, attachment, agentLang } = chat;
+
+  // Local ephemeral state (per mount)
+  const [, setTick] = useState(0);
+  const rerender = useCallback(() => setTick((t) => t + 1), []);
+  const localRef = useRef<LocalState>({
+    interim: "",
+    sending: false,
+    attaching: false,
+    uploading: false,
+    error: null,
+  });
+  const local = localRef.current;
+
+
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const stickToBottomRef = useRef(true);
   const docInputRef = useRef<HTMLInputElement | null>(null);
   const chatFileInputRef = useRef<HTMLInputElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -71,35 +88,41 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     [agentLang],
   );
 
+  // Track whether the user is near the bottom; only auto-scroll then.
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    stickToBottomRef.current = distance < 80;
+  }, []);
+
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages, sending]);
+    const el = scrollRef.current;
+    if (!el || !stickToBottomRef.current) return;
+    // instant scroll -> no shiver, doesn't fight the user
+    el.scrollTop = el.scrollHeight;
+  }, [messages]);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === "welcome" ? { ...m, content: welcomeMessageFor(agentLang) } : m,
-      ),
-    );
-  }, [agentLang]);
-
   const handleTranscript = useCallback((text: string, isFinal: boolean) => {
     if (isFinal) {
-      setInput((p) => (p + " " + text).trim());
-      setInterim("");
+      setChatState((s) => ({ input: (s.input + " " + text).trim() }));
+      local.interim = "";
+      rerender();
     } else {
-      setInterim(text);
+      local.interim = text;
+      rerender();
     }
-  }, []);
+  }, [local]);
 
   const handleDocFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setUploading(true);
-    setError(null);
+    local.uploading = true;
+    local.error = null;
+    rerender();
     try {
       for (const f of Array.from(files)) {
         try {
@@ -107,40 +130,73 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           toast.success(`${f.name} added to knowledge`);
         } catch (e) {
           const msg = `Failed to read ${f.name}: ${e instanceof Error ? e.message : "unknown"}`;
-          setError(msg);
+          local.error = msg;
           toast.error(msg);
         }
       }
     } finally {
-      setUploading(false);
+      local.uploading = false;
+      rerender();
       if (docInputRef.current) docInputRef.current.value = "";
     }
-  }, []);
+  }, [local]);
 
   const handleChatFile = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const file = files[0];
-    setAttaching(true);
-    setError(null);
+    local.attaching = true;
+    local.error = null;
+    rerender();
     try {
       const att = await readChatAttachment(file);
-      setAttachment(att);
+      setChatState({ attachment: att });
       toast.success(`Attached ${att.name}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Failed to read file";
-      setError(msg);
+      local.error = msg;
       toast.error(msg);
     } finally {
-      setAttaching(false);
+      local.attaching = false;
+      rerender();
       if (chatFileInputRef.current) chatFileInputRef.current.value = "";
     }
-  }, []);
+  }, [local]);
+
+  const handlePaste = useCallback(
+    async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const it of Array.from(items)) {
+        if (it.kind === "file") {
+          const blob = it.getAsFile();
+          if (!blob) continue;
+          e.preventDefault();
+          local.attaching = true;
+          rerender();
+          try {
+            const att = await readChatAttachmentFromBlob(blob);
+            setChatState({ attachment: att });
+            toast.success(`Attached ${att.name}`);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : "Failed to read pasted file";
+            local.error = msg;
+            toast.error(msg);
+          } finally {
+            local.attaching = false;
+            rerender();
+          }
+          return;
+        }
+      }
+    },
+    [local],
+  );
 
   const send = useCallback(async () => {
-    const text = (input + " " + interim).trim();
-    if ((!text && !attachment) || sending) return;
-    setError(null);
-    setInterim("");
+    const text = (input + " " + local.interim).trim();
+    if ((!text && !attachment) || local.sending) return;
+    local.error = null;
+    local.interim = "";
     const displayText =
       text || (attachment ? `Please analyze the attached file: ${attachment.name}` : "");
     const userMsg: UIMessage = {
@@ -151,10 +207,11 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     const assistantId = crypto.randomUUID();
     const placeholder: UIMessage = { id: assistantId, role: "assistant", content: "" };
     setMessages((prev) => [...prev, userMsg, placeholder]);
-    setInput("");
     const currentAttachment = attachment;
-    setAttachment(null);
-    setSending(true);
+    setChatState({ input: "", attachment: null });
+    local.sending = true;
+    stickToBottomRef.current = true;
+    rerender();
 
     const contextChunks = retrieve(displayText, allChunks, 6).map(
       (c) => `Source: ${c.source}\n${c.text}`,
@@ -182,7 +239,6 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
       );
     } catch (e) {
       if ((e as Error).name === "AbortError") {
-        // stopped by user
         toast.info("Response stopped.");
       } else {
         const raw = e instanceof Error ? e.message : "Something went wrong.";
@@ -192,22 +248,29 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           : /fetch|network|failed|load/i.test(raw)
             ? `Agent unavailable — ${raw}`
             : raw;
-        setError(msg);
+        local.error = msg;
         toast.error(msg);
         setMessages((prev) => prev.filter((m) => m.id !== assistantId));
       }
     } finally {
-      setSending(false);
+      local.sending = false;
       abortRef.current = null;
+      rerender();
       inputRef.current?.focus();
     }
-  }, [input, interim, sending, messages, allChunks, attachment, agentLangLabel]);
+  }, [input, attachment, messages, allChunks, agentLangLabel, local]);
 
   const stop = () => abortRef.current?.abort();
 
+  const handleClear = () => {
+    if (local.sending) abortRef.current?.abort();
+    clearChat();
+    toast.success("Chat cleared");
+  };
+
   return (
     <div className="flex h-full flex-col bg-background text-foreground">
-      {/* Header — close on the left, language on the right */}
+      {/* Header */}
       <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
         {onClose && (
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close">
@@ -215,18 +278,35 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           </Button>
         )}
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold">Dynamic Customer Agent</div>
+          <a
+            href="https://github.com/hgjguo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block truncate text-sm font-semibold hover:underline"
+            title="Contact developer"
+          >
+            Dynamic Customer Agent — Contact Developer
+          </a>
           <div className="truncate text-xs text-muted-foreground">
             {docs.length > 0
               ? `${docs.length} doc${docs.length > 1 ? "s" : ""} loaded`
               : "Ask anything in any language"}
           </div>
         </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleClear}
+          aria-label="Clear chat"
+          title="Clear chat"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
         <div className="flex items-center gap-1.5">
           <Languages className="h-3.5 w-3.5 text-muted-foreground" />
           <Select value={agentLang} onValueChange={setAgentLang}>
             <SelectTrigger
-              className="h-8 w-[140px] text-xs"
+              className="h-8 w-[130px] text-xs"
               aria-label="Agent's language"
               title="Agent's language"
             >
@@ -265,8 +345,13 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
         </div>
       )}
 
-      {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      {/* Messages — overscroll-contain so scroll stays inside; instant scroll avoids shiver */}
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4"
+        style={{ scrollBehavior: "auto" }}
+      >
         {messages.map((m) => (
           <div
             key={m.id}
@@ -274,8 +359,11 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           >
             {m.role === "assistant" && (
               <img
-                src={agentAvatar.url}
+                src={agentAvatar}
                 alt="Agent"
+                width={28}
+                height={28}
+                loading="lazy"
                 className="mt-1 h-7 w-7 shrink-0 rounded-full object-cover"
               />
             )}
@@ -306,9 +394,9 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
             )}
           </div>
         ))}
-        {error && (
+        {local.error && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            {error}
+            {local.error}
           </div>
         )}
       </div>
@@ -323,12 +411,10 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
               <FileText className="h-3.5 w-3.5 text-primary" />
             )}
             <span className="max-w-[220px] truncate">{attachment.name}</span>
-            <span className="text-muted-foreground">
-              · analyzed with vision model
-            </span>
+            <span className="text-muted-foreground">· analyzed with vision model</span>
             <button
               className="ml-auto text-muted-foreground hover:text-foreground"
-              onClick={() => setAttachment(null)}
+              onClick={() => setChatState({ attachment: null })}
               aria-label="Remove attachment"
             >
               <X className="h-3.5 w-3.5" />
@@ -336,7 +422,6 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           </div>
         )}
         <div className="flex items-end gap-2">
-          {/* Hidden inputs */}
           <input
             ref={docInputRef}
             type="file"
@@ -356,25 +441,26 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
             type="button"
             variant="ghost"
             size="icon"
-            disabled={attaching || sending}
+            disabled={local.attaching || local.sending}
             onClick={() => chatFileInputRef.current?.click()}
             aria-label="Attach file (image, doc, or code)"
-            title="Attach an image, doc, or code file for this message"
+            title="Attach an image, doc, or code file — or paste one directly"
           >
-            {attaching ? (
+            {local.attaching ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Paperclip className="h-4 w-4" />
             )}
           </Button>
-          <VoiceInput language={agentLang} onTranscript={handleTranscript} disabled={sending} />
+          <VoiceInput language={agentLang} onTranscript={handleTranscript} disabled={local.sending} />
           <Textarea
             ref={inputRef}
-            value={interim ? input + " " + interim : input}
+            value={local.interim ? input + " " + local.interim : input}
             onChange={(e) => {
-              setInput(e.target.value);
-              setInterim("");
+              setChatState({ input: e.target.value });
+              local.interim = "";
             }}
+            onPaste={handlePaste}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -382,12 +468,12 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
               }
             }}
             placeholder={
-              attachment ? "Ask about the attached file…" : "Type in any language…"
+              attachment ? "Ask about the attached file…" : "Type or paste an image…"
             }
             rows={1}
             className="min-h-[40px] max-h-32 resize-none"
           />
-          {sending ? (
+          {local.sending ? (
             <Button type="button" size="icon" variant="destructive" onClick={stop} aria-label="Stop">
               <StopCircle className="h-4 w-4" />
             </Button>
@@ -396,15 +482,14 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
               type="button"
               size="icon"
               onClick={send}
-              disabled={!input.trim() && !interim.trim() && !attachment}
+              disabled={!input.trim() && !local.interim.trim() && !attachment}
               aria-label="Send"
             >
               <Send className="h-4 w-4" />
             </Button>
           )}
         </div>
-        {/* Small hidden helper: keep the doc uploader accessible via long-press if needed. */}
-        {uploading && (
+        {local.uploading && (
           <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" /> Parsing document…
           </div>
@@ -413,3 +498,4 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
     </div>
   );
 }
+

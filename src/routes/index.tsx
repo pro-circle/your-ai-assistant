@@ -28,9 +28,15 @@ function Landing() {
       {/* Nav */}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <span className="text-sm font-semibold tracking-tight sm:text-base">
-            Dynamic Customer Agent
-          </span>
+          <a
+            href="https://github.com/hgjguo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-semibold tracking-tight sm:text-base hover:underline"
+            title="Contact developer"
+          >
+            Dynamic Customer Agent — Contact Developer
+          </a>
           <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground">Features</a>
             <a href="#surfaces" className="hover:text-foreground">Interfaces</a>
@@ -38,18 +44,10 @@ function Landing() {
           </nav>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Button variant="outline" size="sm" asChild>
-              <a
-                href="https://github.com/uyvkjcgdr65"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Contact Developer
-              </a>
-            </Button>
           </div>
         </div>
       </header>
+
 
       {/* Hero */}
       <section id="top" className="relative overflow-hidden">
