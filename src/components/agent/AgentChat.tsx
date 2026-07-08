@@ -499,10 +499,3 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
   );
 }
 
-// Tiny module-level pub/sub to trigger re-renders when local mutable ref changes.
-const forceRerenderListeners = new Set<() => void>();
-let forceRerenderVersion = 0;
-function bumpForceRerender() {
-  forceRerenderVersion++;
-  for (const cb of forceRerenderListeners) cb();
-}
