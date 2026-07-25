@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Globe2, Mic, FileText, Zap, PanelRight, LayoutGrid, Shield, Eye, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -104,18 +104,18 @@ function AboutPage() {
           </ol>
         </section>
 
-        <section className="mt-16 rounded-2xl border border-border/60 bg-card p-8">
+        <section className="mt-16">
           <div className="flex items-center gap-2 text-primary">
             <Sparkles className="h-5 w-5" />
             <div className="text-xs font-semibold uppercase tracking-wider">Tech stack</div>
           </div>
-          <ul className="mt-4 grid gap-2 text-sm text-muted-foreground sm:grid-cols-2">
-            <li>• TanStack Start (React 19 + Vite 7)</li>
-            <li>• Tailwind CSS v4 with semantic design tokens</li>
-            <li>• shadcn/ui components + lucide icons</li>
-            <li>• Groq OpenAI-compatible streaming API</li>
-            <li>• pdfjs-dist + mammoth for in-browser parsing</li>
-            <li>• sonner for toast notifications</li>
+          <ul className="mt-4 list-disc space-y-2 pl-5 text-muted-foreground">
+            <li>TanStack Start (React 19 + Vite 7)</li>
+            <li>Tailwind CSS v4 with semantic design tokens</li>
+            <li>shadcn/ui components + lucide icons</li>
+            <li>OpenAI-compatible streaming API</li>
+            <li>pdfjs-dist + mammoth for in-browser parsing</li>
+            <li>sonner for toast notifications</li>
           </ul>
         </section>
 
@@ -133,18 +133,6 @@ function AboutPage() {
           Dynamic Customer Agent
         </div>
       </footer>
-    </div>
-  );
-}
-
-function Card({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-border/60 bg-card p-6">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 text-primary">
-        <span className="h-5 w-5 [&>svg]:h-5 [&>svg]:w-5">{icon}</span>
-      </div>
-      <div className="font-semibold">{title}</div>
-      <div className="mt-1 text-sm text-muted-foreground">{children}</div>
     </div>
   );
 }
