@@ -56,13 +56,6 @@ function Landing() {
           />
         </div>
         <div className="mx-auto max-w-6xl px-6 pt-20 pb-24 text-center">
-          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-            </span>
-            Powered by Groq · streaming in real time
-          </div>
           <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl md:text-6xl">
             The customer agent that speaks{" "}
             <span
