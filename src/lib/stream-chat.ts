@@ -39,6 +39,47 @@ export async function streamChat(
   const decoder = new TextDecoder();
   let buffer = "";
 
+  // Strip reasoning/thinking blocks emitted by some models. We buffer across
+  // token boundaries so a partial "<think>" or "</think>" tag is never shown.
+  let inThink = false;
+  let pending = "";
+  const THINK_OPEN = /<think(?:ing)?>/i;
+  const THINK_CLOSE = /<\/think(?:ing)?>/i;
+
+  const emit = (chunk: string) => {
+    pending += chunk;
+    // Loop consuming think blocks and safe prefixes until nothing more can be flushed.
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (inThink) {
+        const close = pending.match(THINK_CLOSE);
+        if (!close) return;
+        pending = pending.slice((close.index ?? 0) + close[0].length);
+        inThink = false;
+        continue;
+      }
+      const open = pending.match(THINK_OPEN);
+      if (open) {
+        const before = pending.slice(0, open.index ?? 0);
+        if (before) onDelta(before);
+        pending = pending.slice((open.index ?? 0) + open[0].length);
+        inThink = true;
+        continue;
+      }
+      // Hold back a tail that could be the start of a partial tag.
+      const tail = pending.slice(-12);
+      if (/<\/?t(h(i(n(k(i(n(g)?)?)?)?)?)?)?$/i.test(tail)) {
+        const safe = pending.slice(0, pending.length - tail.length);
+        if (safe) onDelta(safe);
+        pending = tail;
+        return;
+      }
+      if (pending) onDelta(pending);
+      pending = "";
+      return;
+    }
+  };
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -50,14 +91,18 @@ export async function streamChat(
       const line = raw.trim();
       if (!line.startsWith("data:")) continue;
       const data = line.slice(5).trim();
-      if (data === "[DONE]") return;
+      if (data === "[DONE]") {
+        if (!inThink && pending) onDelta(pending);
+        return;
+      }
       try {
         const json = JSON.parse(data);
         const delta = json?.choices?.[0]?.delta?.content;
-        if (typeof delta === "string" && delta.length > 0) onDelta(delta);
+        if (typeof delta === "string" && delta.length > 0) emit(delta);
       } catch {
         /* skip malformed */
       }
     }
   }
+  if (!inThink && pending) onDelta(pending);
 }
