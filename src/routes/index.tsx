@@ -45,9 +45,10 @@ function Landing() {
 
       {/* Hero */}
       <section id="top" className="relative overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-grid" />
         <div className="pointer-events-none absolute inset-0 -z-10">
           <div
-            className="absolute left-1/2 top-[-15%] h-[600px] w-[900px] -translate-x-1/2 rounded-full opacity-40 blur-3xl"
+            className="absolute left-1/2 top-[-15%] h-[600px] w-[900px] rounded-full opacity-40 blur-3xl animate-float-glow"
             style={{
               background:
                 "radial-gradient(circle, var(--brand-glow) 0%, transparent 60%)",
@@ -55,6 +56,13 @@ function Landing() {
           />
         </div>
         <div className="mx-auto max-w-6xl px-6 pt-20 pb-24 text-center">
+          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+            </span>
+            Powered by Groq · streaming in real time
+          </div>
           <h1 className="mx-auto max-w-3xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl md:text-6xl">
             The customer agent that speaks{" "}
             <span
@@ -95,6 +103,7 @@ function Landing() {
           </div>
         </div>
       </section>
+
 
       {/* Features */}
       <section id="features" className="border-t border-border/60 py-24">
@@ -377,8 +386,8 @@ function Feature({
   body: string;
 }) {
   return (
-    <div className="group relative rounded-2xl border border-border/60 bg-card p-6 transition-all hover:border-primary/50 hover:shadow-lg">
-      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 text-primary">
+    <div className="card-hover group relative rounded-2xl border border-border/60 bg-card p-6">
+      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 text-primary ring-1 ring-primary/20 transition-transform group-hover:scale-110">
         <span className="h-5 w-5 [&>svg]:h-5 [&>svg]:w-5">{icon}</span>
       </div>
       <div className="font-semibold">{title}</div>
@@ -401,9 +410,9 @@ function SurfaceCard({
   onClick: () => void;
 }) {
   return (
-    <div className="flex flex-col justify-between rounded-2xl border border-border/60 bg-card p-8">
+    <div className="card-hover flex flex-col justify-between rounded-2xl border border-border/60 bg-gradient-to-br from-card to-card/60 p-8">
       <div>
-        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground">
+        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-accent text-primary-foreground shadow-lg shadow-primary/20">
           <span className="h-5 w-5 [&>svg]:h-5 [&>svg]:w-5">{icon}</span>
         </div>
         <div className="text-lg font-semibold">{title}</div>
