@@ -28,15 +28,9 @@ function Landing() {
       {/* Nav */}
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
-          <a
-            href="https://github.com/hgjguo"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-semibold tracking-tight sm:text-base hover:underline"
-            title="Contact developer"
-          >
-            Dynamic Customer Agent — Contact Developer
-          </a>
+          <span className="text-sm font-semibold tracking-tight sm:text-base">
+            Dynamic Customer Agent
+          </span>
           <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground">Features</a>
             <a href="#surfaces" className="hover:text-foreground">Interfaces</a>
