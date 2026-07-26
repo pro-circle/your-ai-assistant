@@ -9,6 +9,7 @@ export type ChatState = {
   input: string;
   attachment: ChatAttachment | null;
   agentLang: string;
+  domain: string;
 };
 
 const listeners = new Set<() => void>();
@@ -24,6 +25,7 @@ let state: ChatState = {
   input: "",
   attachment: null,
   agentLang: initialLang,
+  domain: "",
 };
 
 export function getChatState(): ChatState {
