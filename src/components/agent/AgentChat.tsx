@@ -223,6 +223,21 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
       role: "user",
       content: attachment ? `${displayText}\n\n📎 ${attachment.name}` : displayText,
     };
+
+    // Gate: the agent only answers once at least one document is loaded.
+    if (docs.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        userMsg,
+        { id: crypto.randomUUID(), role: "assistant", content: NO_DOC_MESSAGE },
+      ]);
+      setChatState({ input: "", attachment: null });
+      stickToBottomRef.current = true;
+      rerender();
+      toast.info("Upload a document first so the agent can answer.");
+      return;
+    }
+
     const assistantId = crypto.randomUUID();
     const placeholder: UIMessage = { id: assistantId, role: "assistant", content: "" };
     setMessages((prev) => [...prev, userMsg, placeholder]);
