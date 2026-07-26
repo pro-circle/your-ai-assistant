@@ -72,7 +72,8 @@ export function AgentLauncher() {
         <Button
           size="icon"
           className={cn(
-            "h-14 w-14 rounded-full shadow-xl transition-transform bg-gradient-to-br from-primary to-accent hover:scale-105",
+            "h-14 w-14 rounded-full shadow-xl bg-red-500 text-white",
+            "transition-all duration-300 ease-out hover:bg-emerald-300 hover:text-emerald-950 hover:scale-105",
             open && "scale-90 opacity-70",
           )}
           onClick={() => setOpen((o) => !o)}
@@ -80,6 +81,7 @@ export function AgentLauncher() {
         >
           <MessageCircle className="h-6 w-6" />
         </Button>
+
       </div>
 
       {surface === "sidebar" ? (
