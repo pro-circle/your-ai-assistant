@@ -11,6 +11,7 @@ type Body = {
   contextChunks?: string[];
   attachment?: Attachment | null;
   outputLanguage?: string | null;
+  domain?: string | null;
 };
 
 // Default text model; vision model used automatically when a file is attached in chat.
