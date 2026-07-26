@@ -269,7 +269,7 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           );
         },
         controller.signal,
-        { attachment: currentAttachment, outputLanguage: agentLangLabel },
+        { attachment: currentAttachment, outputLanguage: agentLangLabel, domain },
       );
     } catch (e) {
       if ((e as Error).name === "AbortError") {
