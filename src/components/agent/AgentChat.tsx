@@ -11,9 +11,12 @@ import {
   Image as ImageIcon,
   Languages,
   RotateCcw,
+  Briefcase,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -36,6 +39,7 @@ import { VOICE_LANGUAGES } from "@/lib/voice-languages";
 import {
   clearChat,
   getChatState,
+  setAgentDomain,
   setAgentLang,
   setChatState,
   setMessages,
@@ -44,6 +48,19 @@ import {
 } from "@/lib/chat-store";
 import agentAvatar from "@/assets/agent-avatar.png";
 import { toast } from "sonner";
+
+const NO_DOC_MESSAGE = [
+  "Before I can answer, I need a document to work from. Please upload one first 📄",
+  "",
+  "**How to upload:**",
+  "1. Click the **Upload doc** button (the upload icon next to the paperclip below), or use the **Upload docs** section on the page.",
+  "2. Choose a **PDF, DOCX, TXT or MD** file — up to **15 MB** each.",
+  "3. Wait for the file chip to appear at the top of this chat.",
+  "4. Then ask your question — I'll answer using that document.",
+  "",
+  "Tip: you can also set **Agent Domain** in the header (e.g. \"medical shop agent\") so I answer in the right role.",
+].join("\n");
+
 
 const CHAT_FILE_ACCEPT =
   "image/*,.pdf,.docx,.txt,.md,.js,.jsx,.ts,.tsx,.py,.java,.c,.cc,.cpp,.cs,.go,.rs,.rb,.php,.html,.css,.json,.yml,.yaml,.xml,.sh,.sql,.swift,.kt,.dart,.lua,.r,.toml,.ini,.log,.vue,.svelte";
