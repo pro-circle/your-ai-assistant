@@ -552,6 +552,21 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           />
           <Button
             type="button"
+            variant={docs.length === 0 ? "secondary" : "ghost"}
+            size="icon"
+            disabled={local.uploading || local.sending}
+            onClick={() => docInputRef.current?.click()}
+            aria-label="Upload doc to knowledge base"
+            title="Upload doc (PDF, DOCX, TXT, MD — max 15 MB)"
+          >
+            {local.uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            type="button"
             variant="ghost"
             size="icon"
             disabled={local.attaching || local.sending}
