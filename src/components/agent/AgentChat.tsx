@@ -292,7 +292,7 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
       rerender();
       inputRef.current?.focus();
     }
-  }, [input, attachment, messages, allChunks, agentLangLabel, local]);
+  }, [input, attachment, messages, allChunks, agentLangLabel, domain, docs.length, local]);
 
   const stop = () => abortRef.current?.abort();
 
