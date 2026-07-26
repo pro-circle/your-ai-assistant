@@ -77,7 +77,9 @@ type LocalState = {
 export function AgentChat({ onClose }: { onClose?: () => void }) {
   const docs = useSyncExternalStore(subscribeDocs, getDocs, getDocs);
   const chat = useSyncExternalStore(subscribeChat, getChatState, getChatState);
-  const { messages, input, attachment, agentLang } = chat;
+  const { messages, input, attachment, agentLang, domain } = chat;
+  const [domainOpen, setDomainOpen] = useState(false);
+  const [domainDraft, setDomainDraft] = useState(domain);
 
   // Local ephemeral state (per mount)
   const [, setTick] = useState(0);
