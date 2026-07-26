@@ -52,6 +52,11 @@ export function setMessages(updater: (prev: UIMessage[]) => UIMessage[]) {
   emit();
 }
 
+export function setAgentDomain(domain: string) {
+  state = { ...state, domain };
+  emit();
+}
+
 export function setAgentLang(lang: string) {
   state = {
     ...state,
