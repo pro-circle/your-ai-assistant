@@ -324,9 +324,22 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           <div className="truncate text-xs text-muted-foreground">
             {docs.length > 0
               ? `${docs.length} doc${docs.length > 1 ? "s" : ""} loaded`
-              : "Ask anything in any language"}
+              : "Upload a doc to start"}
+            {domain ? ` · ${domain}` : ""}
           </div>
         </div>
+        <Button
+          variant={domain ? "secondary" : "ghost"}
+          size="icon"
+          onClick={() => {
+            setDomainDraft(domain);
+            setDomainOpen((o) => !o);
+          }}
+          aria-label="Agent Domain"
+          title="Agent Domain"
+        >
+          <Briefcase className="h-4 w-4" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
