@@ -370,6 +370,72 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
         </div>
       </div>
 
+      {/* Agent Domain mini card */}
+      {domainOpen && (
+        <div className="border-b border-border/60 bg-muted/30 px-3 py-3">
+          <div className="rounded-xl border border-border/60 bg-card p-3 shadow-sm">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Briefcase className="h-4 w-4 text-primary" />
+              Agent Domain
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Describe the role this agent should play — it becomes part of its system prompt.
+            </p>
+            <Input
+              value={domainDraft}
+              onChange={(e) => setDomainDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  setAgentDomain(domainDraft.trim());
+                  setDomainOpen(false);
+                  toast.success(
+                    domainDraft.trim() ? `Domain set: ${domainDraft.trim()}` : "Domain cleared",
+                  );
+                }
+              }}
+              placeholder="e.g. medical shop agent, logistics service agent…"
+              maxLength={200}
+              className="mt-3 h-9 text-sm"
+            />
+            <div className="mt-3 flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => {
+                  setAgentDomain(domainDraft.trim());
+                  setDomainOpen(false);
+                  toast.success(
+                    domainDraft.trim() ? `Domain set: ${domainDraft.trim()}` : "Domain cleared",
+                  );
+                }}
+              >
+                Save domain
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setDomainDraft("");
+                  setAgentDomain("");
+                  toast.info("Domain cleared");
+                }}
+              >
+                Clear
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="ml-auto"
+                onClick={() => setDomainOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
       {/* Doc chips */}
       {docs.length > 0 && (
         <div className="flex flex-wrap gap-2 border-b border-border/60 px-4 py-2">
