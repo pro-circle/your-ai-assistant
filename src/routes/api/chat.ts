@@ -11,6 +11,7 @@ type Body = {
   contextChunks?: string[];
   attachment?: Attachment | null;
   outputLanguage?: string | null;
+  domain?: string | null;
 };
 
 // Default text model; vision model used automatically when a file is attached in chat.
@@ -57,10 +58,17 @@ export const Route = createFileRoute("/api/chat")({
           ? `Always reply in ${body.outputLanguage}, regardless of the language the user writes in.`
           : "Detect the language of the user's most recent message and reply in exactly that language.";
 
+        const domain = typeof body.domain === "string" ? body.domain.trim().slice(0, 300) : "";
+        const domainDirective = domain
+          ? ` You operate specifically as a "${domain}". Stay in that role at all times: use its vocabulary, priorities, and typical workflows, and frame every answer from that domain's perspective.`
+          : "";
+
         const system: ChatMessage = {
           role: "system",
           content:
-            "You are Dynamic Customer Agent — a helpful, precise, multilingual support assistant. " +
+            "You are Dynamic Customer Agent — a helpful, precise, multilingual support assistant." +
+            domainDirective +
+            " " +
             languageDirective +
             " Carefully search the provided document excerpts and any attached file before responding. " +
             "Give a clear, direct answer first, then a brief explanation with the relevant details. " +

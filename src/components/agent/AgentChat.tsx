@@ -11,9 +11,12 @@ import {
   Image as ImageIcon,
   Languages,
   RotateCcw,
+  Briefcase,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -36,6 +39,7 @@ import { VOICE_LANGUAGES } from "@/lib/voice-languages";
 import {
   clearChat,
   getChatState,
+  setAgentDomain,
   setAgentLang,
   setChatState,
   setMessages,
@@ -44,6 +48,19 @@ import {
 } from "@/lib/chat-store";
 import agentAvatar from "@/assets/agent-avatar.png";
 import { toast } from "sonner";
+
+const NO_DOC_MESSAGE = [
+  "Before I can answer, I need a document to work from. Please upload one first 📄",
+  "",
+  "**How to upload:**",
+  "1. Click the **Upload doc** button (the upload icon next to the paperclip below), or use the **Upload docs** section on the page.",
+  "2. Choose a **PDF, DOCX, TXT or MD** file — up to **15 MB** each.",
+  "3. Wait for the file chip to appear at the top of this chat.",
+  "4. Then ask your question — I'll answer using that document.",
+  "",
+  "Tip: you can also set **Agent Domain** in the header (e.g. \"medical shop agent\") so I answer in the right role.",
+].join("\n");
+
 
 const CHAT_FILE_ACCEPT =
   "image/*,.pdf,.docx,.txt,.md,.js,.jsx,.ts,.tsx,.py,.java,.c,.cc,.cpp,.cs,.go,.rs,.rb,.php,.html,.css,.json,.yml,.yaml,.xml,.sh,.sql,.swift,.kt,.dart,.lua,.r,.toml,.ini,.log,.vue,.svelte";
@@ -60,7 +77,9 @@ type LocalState = {
 export function AgentChat({ onClose }: { onClose?: () => void }) {
   const docs = useSyncExternalStore(subscribeDocs, getDocs, getDocs);
   const chat = useSyncExternalStore(subscribeChat, getChatState, getChatState);
-  const { messages, input, attachment, agentLang } = chat;
+  const { messages, input, attachment, agentLang, domain } = chat;
+  const [domainOpen, setDomainOpen] = useState(false);
+  const [domainDraft, setDomainDraft] = useState(domain);
 
   // Local ephemeral state (per mount)
   const [, setTick] = useState(0);
@@ -204,6 +223,21 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
       role: "user",
       content: attachment ? `${displayText}\n\n📎 ${attachment.name}` : displayText,
     };
+
+    // Gate: the agent only answers once at least one document is loaded.
+    if (docs.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        userMsg,
+        { id: crypto.randomUUID(), role: "assistant", content: NO_DOC_MESSAGE },
+      ]);
+      setChatState({ input: "", attachment: null });
+      stickToBottomRef.current = true;
+      rerender();
+      toast.info("Upload a document first so the agent can answer.");
+      return;
+    }
+
     const assistantId = crypto.randomUUID();
     const placeholder: UIMessage = { id: assistantId, role: "assistant", content: "" };
     setMessages((prev) => [...prev, userMsg, placeholder]);
@@ -235,7 +269,7 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           );
         },
         controller.signal,
-        { attachment: currentAttachment, outputLanguage: agentLangLabel },
+        { attachment: currentAttachment, outputLanguage: agentLangLabel, domain },
       );
     } catch (e) {
       if ((e as Error).name === "AbortError") {
@@ -258,7 +292,7 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
       rerender();
       inputRef.current?.focus();
     }
-  }, [input, attachment, messages, allChunks, agentLangLabel, local]);
+  }, [input, attachment, messages, allChunks, agentLangLabel, domain, docs.length, local]);
 
   const stop = () => abortRef.current?.abort();
 
@@ -290,9 +324,22 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           <div className="truncate text-xs text-muted-foreground">
             {docs.length > 0
               ? `${docs.length} doc${docs.length > 1 ? "s" : ""} loaded`
-              : "Ask anything in any language"}
+              : "Upload a doc to start"}
+            {domain ? ` · ${domain}` : ""}
           </div>
         </div>
+        <Button
+          variant={domain ? "secondary" : "ghost"}
+          size="icon"
+          onClick={() => {
+            setDomainDraft(domain);
+            setDomainOpen((o) => !o);
+          }}
+          aria-label="Agent Domain"
+          title="Agent Domain"
+        >
+          <Briefcase className="h-4 w-4" />
+        </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -322,6 +369,72 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
           </Select>
         </div>
       </div>
+
+      {/* Agent Domain mini card */}
+      {domainOpen && (
+        <div className="border-b border-border/60 bg-muted/30 px-3 py-3">
+          <div className="rounded-xl border border-border/60 bg-card p-3 shadow-sm">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Briefcase className="h-4 w-4 text-primary" />
+              Agent Domain
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Describe the role this agent should play — it becomes part of its system prompt.
+            </p>
+            <Input
+              value={domainDraft}
+              onChange={(e) => setDomainDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  setAgentDomain(domainDraft.trim());
+                  setDomainOpen(false);
+                  toast.success(
+                    domainDraft.trim() ? `Domain set: ${domainDraft.trim()}` : "Domain cleared",
+                  );
+                }
+              }}
+              placeholder="e.g. medical shop agent, logistics service agent…"
+              maxLength={200}
+              className="mt-3 h-9 text-sm"
+            />
+            <div className="mt-3 flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => {
+                  setAgentDomain(domainDraft.trim());
+                  setDomainOpen(false);
+                  toast.success(
+                    domainDraft.trim() ? `Domain set: ${domainDraft.trim()}` : "Domain cleared",
+                  );
+                }}
+              >
+                Save domain
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setDomainDraft("");
+                  setAgentDomain("");
+                  toast.info("Domain cleared");
+                }}
+              >
+                Clear
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="ml-auto"
+                onClick={() => setDomainOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Doc chips */}
       {docs.length > 0 && (
@@ -437,6 +550,21 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
             className="hidden"
             onChange={(e) => handleChatFile(e.target.files)}
           />
+          <Button
+            type="button"
+            variant={docs.length === 0 ? "secondary" : "ghost"}
+            size="icon"
+            disabled={local.uploading || local.sending}
+            onClick={() => docInputRef.current?.click()}
+            aria-label="Upload doc to knowledge base"
+            title="Upload doc (PDF, DOCX, TXT, MD — max 15 MB)"
+          >
+            {local.uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+          </Button>
           <Button
             type="button"
             variant="ghost"

@@ -9,7 +9,11 @@ export async function streamChat(
   contextChunks: string[],
   onDelta: (delta: string) => void,
   signal?: AbortSignal,
-  options?: { attachment?: ChatAttachment | null; outputLanguage?: string | null },
+  options?: {
+    attachment?: ChatAttachment | null;
+    outputLanguage?: string | null;
+    domain?: string | null;
+  },
 ): Promise<void> {
   const res = await fetch("/api/chat", {
     method: "POST",
@@ -19,6 +23,7 @@ export async function streamChat(
       contextChunks,
       attachment: options?.attachment ?? null,
       outputLanguage: options?.outputLanguage ?? null,
+      domain: options?.domain ?? null,
     }),
     signal,
   });

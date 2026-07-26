@@ -9,6 +9,7 @@ export type ChatState = {
   input: string;
   attachment: ChatAttachment | null;
   agentLang: string;
+  domain: string;
 };
 
 const listeners = new Set<() => void>();
@@ -24,6 +25,7 @@ let state: ChatState = {
   input: "",
   attachment: null,
   agentLang: initialLang,
+  domain: "",
 };
 
 export function getChatState(): ChatState {
@@ -47,6 +49,11 @@ export function setChatState(patch: Partial<ChatState> | ((s: ChatState) => Part
 
 export function setMessages(updater: (prev: UIMessage[]) => UIMessage[]) {
   state = { ...state, messages: updater(state.messages) };
+  emit();
+}
+
+export function setAgentDomain(domain: string) {
+  state = { ...state, domain };
   emit();
 }
 
