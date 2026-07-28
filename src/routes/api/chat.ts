@@ -63,6 +63,11 @@ export const Route = createFileRoute("/api/chat")({
           ? ` You operate specifically as a "${domain}". Stay in that role at all times: use its vocabulary, priorities, and typical workflows, and frame every answer from that domain's perspective.`
           : "";
 
+        const noDocsDirective =
+          !contextBlock && !body.attachment
+            ? " No documents have been uploaded yet, so handle only basic, general queries: keep answers short and high level, and do not invent product-, policy-, or company-specific details. End such replies with one short friendly line inviting the user to upload a PDF, DOCX, TXT or MD document (via the upload button in the chat or the Upload docs section) for detailed, document-grounded answers."
+            : "";
+
         const system: ChatMessage = {
           role: "system",
           content:
@@ -77,6 +82,7 @@ export const Route = createFileRoute("/api/chat")({
             "If a user attaches a file that is not related to the loaded documents, still help them fully — analyze it, explain what you see, and answer their question. " +
             "Never begin a response with an apology like 'Sorry' — always help pleasantly. " +
             "If information is genuinely missing, ask a short clarifying question or answer from general knowledge, but do not refuse." +
+            noDocsDirective +
             contextBlock,
         };
 

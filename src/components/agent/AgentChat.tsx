@@ -49,17 +49,8 @@ import {
 import agentAvatar from "@/assets/agent-avatar.png";
 import { toast } from "sonner";
 
-const NO_DOC_MESSAGE = [
-  "Before I can answer, I need a document to work from. Please upload one first 📄",
-  "",
-  "**How to upload:**",
-  "1. Click the **Upload doc** button (the upload icon next to the paperclip below), or use the **Upload docs** section on the page.",
-  "2. Choose a **PDF, DOCX, TXT or MD** file — up to **15 MB** each.",
-  "3. Wait for the file chip to appear at the top of this chat.",
-  "4. Then ask your question — I'll answer using that document.",
-  "",
-  "Tip: you can also set **Agent Domain** in the header (e.g. \"medical shop agent\") so I answer in the right role.",
-].join("\n");
+
+
 
 
 const CHAT_FILE_ACCEPT =
@@ -95,6 +86,7 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
 
 
   const abortRef = useRef<AbortController | null>(null);
+  const nudgedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const docInputRef = useRef<HTMLInputElement | null>(null);
@@ -224,19 +216,12 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
       content: attachment ? `${displayText}\n\n📎 ${attachment.name}` : displayText,
     };
 
-    // Gate: the agent only answers once at least one document is loaded.
-    if (docs.length === 0) {
-      setMessages((prev) => [
-        ...prev,
-        userMsg,
-        { id: crypto.randomUUID(), role: "assistant", content: NO_DOC_MESSAGE },
-      ]);
-      setChatState({ input: "", attachment: null });
-      stickToBottomRef.current = true;
-      rerender();
-      toast.info("Upload a document first so the agent can answer.");
-      return;
+    // No docs? Still answer (basic queries only) — just nudge the user once.
+    if (docs.length === 0 && !nudgedRef.current) {
+      nudgedRef.current = true;
+      toast.info("Upload a document for detailed, document-based answers.");
     }
+
 
     const assistantId = crypto.randomUUID();
     const placeholder: UIMessage = { id: assistantId, role: "assistant", content: "" };
