@@ -82,6 +82,7 @@ export const Route = createFileRoute("/api/chat")({
             "If a user attaches a file that is not related to the loaded documents, still help them fully — analyze it, explain what you see, and answer their question. " +
             "Never begin a response with an apology like 'Sorry' — always help pleasantly. " +
             "If information is genuinely missing, ask a short clarifying question or answer from general knowledge, but do not refuse." +
+            noDocsDirective +
             contextBlock,
         };
 
