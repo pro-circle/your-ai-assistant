@@ -4,6 +4,12 @@ export type ChatAttachment =
   | { kind: "image"; name: string; mimeType: string; dataUrl: string }
   | { kind: "text"; name: string; mimeType: string; text: string };
 
+// Point the browser straight at the Flask backend by setting
+// VITE_CHAT_API_URL (e.g. https://your-service.a.run.app/api/chat).
+// Left unset, requests go through the same-origin proxy route, which forwards
+// to Flask via CHAT_BACKEND_URL.
+const CHAT_ENDPOINT = import.meta.env.VITE_CHAT_API_URL || "/api/chat";
+
 export async function streamChat(
   messages: ChatMessage[],
   contextChunks: string[],
@@ -15,7 +21,7 @@ export async function streamChat(
     domain?: string | null;
   },
 ): Promise<void> {
-  const res = await fetch("/api/chat", {
+  const res = await fetch(CHAT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
