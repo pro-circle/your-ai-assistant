@@ -95,6 +95,7 @@ export function AgentChat({ onClose }: { onClose?: () => void }) {
 
 
   const abortRef = useRef<AbortController | null>(null);
+  const nudgedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const stickToBottomRef = useRef(true);
   const docInputRef = useRef<HTMLInputElement | null>(null);
