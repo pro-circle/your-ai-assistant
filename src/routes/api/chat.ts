@@ -63,6 +63,11 @@ export const Route = createFileRoute("/api/chat")({
           ? ` You operate specifically as a "${domain}". Stay in that role at all times: use its vocabulary, priorities, and typical workflows, and frame every answer from that domain's perspective.`
           : "";
 
+        const noDocsDirective =
+          !contextBlock && !body.attachment
+            ? " No documents have been uploaded yet, so handle only basic, general queries: keep answers short and high level, and do not invent product-, policy-, or company-specific details. End such replies with one short friendly line inviting the user to upload a PDF, DOCX, TXT or MD document (via the upload button in the chat or the Upload docs section) for detailed, document-grounded answers."
+            : "";
+
         const system: ChatMessage = {
           role: "system",
           content:
