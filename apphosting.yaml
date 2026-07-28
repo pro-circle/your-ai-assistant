@@ -1,4 +1,5 @@
-# Firebase App Hosting config — runs the TanStack Start SSR server on Cloud Run.
+# Firebase App Hosting config — runs the TanStack Start SSR frontend on Cloud Run.
+# The backend is the Flask service in ./backend (deployed separately to Cloud Run).
 # Docs: https://firebase.google.com/docs/app-hosting/configure
 runConfig:
   cpu: 1
@@ -8,9 +9,10 @@ runConfig:
   concurrency: 80
 
 env:
-  # Set the real value in the Firebase console (App Hosting → Secrets)
-  # or with: firebase apphosting:secrets:set GROQ_API_KEY
-  - variable: GROQ_API_KEY
-    secret: GROQ_API_KEY
+  # URL of the deployed Flask backend, e.g.
+  #   https://dynamic-agent-api-abc123-uc.a.run.app
+  # Set with: firebase apphosting:backends:update ... or edit this value.
+  - variable: CHAT_BACKEND_URL
+    value: "http://127.0.0.1:5001"
     availability:
       - RUNTIME
